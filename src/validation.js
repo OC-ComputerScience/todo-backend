@@ -1,0 +1,100 @@
+import { ClientError } from './errors';
+
+export class Optional {
+    constructor(value){
+        this.value = value;
+    }
+
+    toJSON(){
+        return this.value;
+    }
+}
+
+export function jsonType(value) {
+    if(Array.isArray(value))
+        return 'array';
+    if(typeof value === 'object')
+        return 'object';
+    if(typeof value === 'string')
+        return 'string';
+    if(typeof value === 'number')
+        return 'number';
+    if(typeof value === 'boolean')
+        return 'boolean';
+    if(value == null)
+        return 'null';
+    return 'unknown';
+}
+
+function join(...parts) {
+    return parts.filter(Boolean).join('.');
+}
+
+function minus(arr, arr2) {
+    let set = new Set(arr2);
+    return arr.filter(ele => !set.has(ele));
+}
+
+export function jsonValidate(actual, expected, path=null) {
+    if(expected instanceof Optional){
+        if(actual == null || actual === '')
+            return actual;
+        expected = expected.value;
+    }
+    let actualType = jsonType(actual);
+    let expectedType = jsonType(expected);
+    if(expectedType !== actualType){
+        throw new ClientError({
+            code: 'invalid-body',
+            message: `Invalid ${path || 'body'}. Expected '${expectedType}' but got '${actualType}'. See data for expected format.`,
+            data: expected
+        });
+    }
+    switch(expectedType) {
+        case 'string': {
+            if(actual.length === 0){
+                throw new ClientError({
+                    code: 'missing-fields',
+                    message: `Invalid ${path || 'body'}. Cannot be empty.`,
+                    data: actual
+                });
+            }
+            break;
+        }
+        case 'array': {
+            for(let i = 0; i < actual.length; i++)
+                jsonValidate(actual[i], expected[i % expected.length], join(path, i));
+            break;
+        }
+        case 'object': {
+            let actualKeys = Object.keys(actual);
+            let expectedKeys = Object.keys(expected);
+            let missingKeys = minus(
+                expectedKeys.filter(key => !(expected[key] instanceof Optional)),
+                actualKeys
+            );
+            if(missingKeys.length > 0){
+                throw new ClientError({
+                    code: 'missing-fields',
+                    message: `Missing required fields in ${path || 'body'}. These must be provided. See data for missing fields.`,
+                    data: missingKeys
+                });
+            }
+            let unexpectedKeys = minus(actualKeys, expectedKeys);
+            if(unexpectedKeys.length > 0){
+                throw new ClientError({
+                    code: 'unexpected-fields',
+                    message: `Unexpected fields in ${path || 'body'}. Remove these. See data for unexpected fields.`,
+                    data: unexpectedKeys
+                });
+            }
+            for(let key of expectedKeys){
+                let actualValue = actual[key];
+                let expectedValue = expected[key];
+                jsonValidate(actualValue, expectedValue, join(path, key));
+            }
+            break;
+        }
+    }
+    return actual;
+}
