@@ -330,7 +330,7 @@ async function start() {
         return {item};
     }));
     app.put('/list/:listId/item/:itemId', route(async (req, res, db) => {
-        let {userId} = await authenticate(req, db);
+        let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
         await checkPermissions(req, db, userId, listId, 'write');
         let body = req.body;
