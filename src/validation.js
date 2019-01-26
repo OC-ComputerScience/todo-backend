@@ -1,5 +1,8 @@
 import { ClientError } from './errors';
 
+/**
+ * Wraps a value to make an entry optional
+ */
 export class Optional {
     constructor(value){
         this.value = value;
@@ -10,6 +13,9 @@ export class Optional {
     }
 }
 
+/**
+ * Returns the json type of a value
+ */
 export function jsonType(value) {
     if(Array.isArray(value))
         return 'array';
@@ -26,15 +32,24 @@ export function jsonType(value) {
     return 'unknown';
 }
 
+/**
+ * Joins the given strings with a dot, filtering out null and empty strings.
+ */
 function join(...parts) {
     return parts.filter(Boolean).join('.');
 }
 
+/**
+ * Subtracts everything in arr2 from arr.
+ */
 function minus(arr, arr2) {
     let set = new Set(arr2);
     return arr.filter(ele => !set.has(ele));
 }
 
+/**
+ * Validates that the given body matches the expected form. See server.js for examples of usage.
+ */
 export function jsonValidate(actual, expected, path=null) {
     if(expected instanceof Optional){
         if(actual == null || actual === '')

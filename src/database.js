@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import {database as config} from '../config';
 import {saltSize, keySize} from './crypto';
 
+//create the database connection pool
 const pool = mysql.createPool({
     host: config.hostname,
     port: config.port,
@@ -12,6 +13,10 @@ const pool = mysql.createPool({
     connectionLimit: 10
 });
 
+/**
+ * Initializes the database tables
+ * @param {boolean} reset True if the existing tables should be deleted
+ */
 export async function init(reset=false) {
     let conn = await pool.getConnection();
     try{
@@ -23,6 +28,7 @@ export async function init(reset=false) {
         await conn.query(`
             CREATE DATABASE IF NOT EXISTS todo
         `);
+        //stores information for the users
         await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.users (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -35,6 +41,7 @@ export async function init(reset=false) {
                 UNIQUE(username)
             )
         `);
+        //stores information for a single login session
         await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.sessions (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -47,6 +54,7 @@ export async function init(reset=false) {
                   ON DELETE CASCADE
             )
         `);
+        //stores information for the lists
         await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.lists (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -54,6 +62,7 @@ export async function init(reset=false) {
                 PRIMARY KEY(id)
             )
         `);
+        //stores information for the items
         await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.items (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -68,6 +77,7 @@ export async function init(reset=false) {
                     ON DELETE CASCADE
             )
         `);
+        //stores information for the permissions which a user has on a list
         await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.permissions (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -94,14 +104,23 @@ export async function init(reset=false) {
     }
 }
 
+/**
+ * Gets a new database connection
+ */
 export async function getConnection() {
     return await pool.getConnection();
 }
 
+/**
+ * Release a database connection back to the pool
+ */
 export async function releaseConnection(conn) {
     conn.release();
 }
 
+/**
+ * Removes expired sessions and inaccessible lists
+ */
 async function purge() {
     let db = await getConnection();
     try{
@@ -120,5 +139,6 @@ async function purge() {
     }
 }
 
+//purge shortly after startup and then every hour on a schedule
 setTimeout(() => purge().catch(console.error), 10 * 1000);
 setInterval(() => purge().catch(console.error), 60 * 60 * 1000);

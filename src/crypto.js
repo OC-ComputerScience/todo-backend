@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import config from '../config';
 import { ClientError } from './errors';
 
+//encryption/hashing settings
 export const saltSize = 16;
 export const keySize = 64;
 export const ivSize = 16;
@@ -13,6 +14,9 @@ const scryptOptions = {
 };
 const secretKey = config.server.secretKey;
 
+/**
+ * Gets a randomized salt for a new password
+ */
 export async function getSalt() {
     return new Promise((fulfill, reject) => {
         crypto.randomBytes(saltSize, (err, salt) => {
@@ -24,6 +28,9 @@ export async function getSalt() {
     });
 }
 
+/**
+ * Hashes the given password with the given salt
+ */
 export async function hashPassword(password, salt) {
     return new Promise((fulfill, reject) => {
         crypto.scrypt(password, salt, keySize, scryptOptions, (err, key) => {
@@ -35,6 +42,9 @@ export async function hashPassword(password, salt) {
     });
 }
 
+/**
+ * Encryption the given JSON value
+ */
 export async function encrypt(content) {
     let str = JSON.stringify(content);
     let iv = await crypto.randomBytes(ivSize);
@@ -50,6 +60,9 @@ export async function encrypt(content) {
     return buffer.toString('base64');
 }
 
+/**
+ * Decrypts the given token into a JSON value
+ */
 export async function decrypt(token) {
     try{
         let buffer = Buffer.from(token, 'base64');

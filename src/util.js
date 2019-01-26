@@ -5,6 +5,7 @@ import { ClientError } from './errors';
 class AuthError extends ClientError {
     constructor(req, obj){
         let headers = obj.headers || {};
+        //if it was not an xhr request, tell the browser to prompt for a username/password
         if(!req.xhr)
             headers['WWW-Authenticate'] = 'Basic charset="UTF-8"';
         obj.headers = headers;
@@ -12,6 +13,12 @@ class AuthError extends ClientError {
     }
 }
 
+/**
+ * A helper for creating routes. Automatically handles several things.
+ * 1. Getting and releasing a DB connection
+ * 2. Async handling
+ * 3. Response body stringifying
+ */
 export function route(func){
     return async (req, res, next) => {
         try{
@@ -37,10 +44,10 @@ export function route(func){
 }
 
 /**
- * @param req
- * @param db
- * @param {boolean|string} require
- * @returns {Promise<*>}
+ * Gets the authentication for this request. Throws an error if there is an authentcation problem.
+ * If require is false, makes authentication optional.
+ * If require is a string, enforces a specific type of authentication (credentials or token).
+ * @return {{type: string, userId: string}}
  */
 export async function authenticate(req, db, require=true) {
     let auth = req.get('authorization');
@@ -115,6 +122,9 @@ function hasRole(role, required) {
     return roles.indexOf(role) >= roles.indexOf(required);
 }
 
+/**
+ * Ensures that the given user has the permissions needed to enact a specific role on the given list. Throws an error if not allowed.
+ */
 export async function checkPermissions(req, db, userId, listId, role) {
     let [results] = await db.query(
         `SELECT role FROM todo.permissions WHERE IF(? IS NOT NULL, userId = ?, userId IS NULL) AND listId = ?`,

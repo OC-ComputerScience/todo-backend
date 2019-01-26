@@ -8,37 +8,55 @@ import { encrypt, getSalt, hashPassword } from './crypto';
 import { route, authenticate, checkPermissions } from './util';
 
 async function start() {
+    //initialize the database
     if(config.database.autoInit)
         await database.init();
 
     let {hostname, port} = config.server;
 
+    //create our Express app
     const app = express();
+    //create a handler for CORS
     const cors = Cors({
         origin: true,
         credentials: true
     });
-    // app.use((req, res, next) => {
-    //     setTimeout(next, 1000);
-    // });
+    //setup our artificial delay (if configured)
+    if(config.server.artificialDelay > 0){
+        app.use((req, res, next) => {
+            setTimeout(next, config.server.artificialDelay);
+        });
+    }
+    //handle CORS requests
     app.use(cors);
+    //parse JSON bodies
     app.use(express.json());
 
+    //reply to all options requests
     app.options('*', cors);
 
     //region user
+
+    //creates a new user
     app.post('/user', route(async (req, res, db) => {
         let body = req.body;
+        //this is an example of how to specify the structure of a body
+        //  all entries are required unless wrapped in an optional (like firstName and lastName)
+        //  strings specify that the type should be a string (the value of the string is what's used in the response to an invalid body)
         body = jsonValidate(body, {
             firstName: new Optional('John'),
             lastName: new Optional('Doe'),
             username: 'johndoe',
             password: 'secret'
         });
+        //create a new salt for our user
         let salt = await getSalt();
+        //hash their password with the salt
         let hash = await hashPassword(body.password, salt);
+        //update the body
         body.password = hash;
         body.salt = salt;
+        //insert the user into the database
         let results;
         try{
             [results] = await db.query(
@@ -46,6 +64,7 @@ async function start() {
                 [body]
             );
         }catch(err){
+            //if there is a DUP_ENTRY error, the username is taken, so report to user
             if(err.code === 'ER_DUP_ENTRY'){
                 throw new ClientError({
                     status: 409,
@@ -56,8 +75,10 @@ async function start() {
             }
             throw err;
         }
+        //also log in the new user
         let userId = `${results.insertId}`;
         let expireTime = new Date(Date.now() + config.tokenLifetime);
+        //insert the new session into the database
         [results] = await db.query(
             `INSERT INTO todo.sessions(userId, expirationDate) VALUES (?, ?)`,
             [userId, expireTime]
@@ -65,12 +86,13 @@ async function start() {
         let sessionId = `${results.insertId}`;
         let token = await encrypt({sessionId});
         return {
-            status: 201,
+            status: 201, //201 CREATED
             userId,
             token,
             expireTime
         };
     }));
+    //gets the user's information
     app.get('/user', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let [results] = await db.query(
@@ -82,6 +104,7 @@ async function start() {
         let user = results[0];
         return {user};
     }));
+    //updates the user's information
     app.put('/user', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let body = req.body;
@@ -90,6 +113,7 @@ async function start() {
             lastName: new Optional('Doe'),
             password: new Optional('secret')
         });
+        //if the request is empty, do nothing
         if(Object.keys(body).length === 0)
             return;
         if('password' in body){
@@ -105,6 +129,7 @@ async function start() {
         if(results.affectedRows === 0)
             throw new Error('Unexpected missing user');
     }));
+    //deletes the user
     app.delete('/user', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let [results] = await db.query(
@@ -114,6 +139,7 @@ async function start() {
         if(results.affectedRows === 0)
             throw new Error('Unexpected missing user');
     }));
+    //checks if the username is taken
     app.get('/user/name-taken', route(async (req, res, db) => {
         let body = req.query;
         body = jsonValidate(body, {
@@ -127,8 +153,11 @@ async function start() {
         let isTaken = Boolean(+results[0].isTaken);
         return {isTaken};
     }));
+
     //endregion
     //region auth
+
+    //creates a new session
     app.post('/user/login', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, 'credentials');
         let expireTime = new Date(Date.now() + config.tokenLifetime);
@@ -140,6 +169,7 @@ async function start() {
         let token = await encrypt({sessionId});
         return {token, expireTime};
     }));
+    //logs out an existing session
     app.post('/user/logout', route(async (req, res, db) => {
         let {sessionId} = await authenticate(req, db, false);
         if(sessionId == null)
@@ -149,8 +179,11 @@ async function start() {
             [sessionId]
         );
     }));
+
     //endregion
     //region list
+
+    //gets the user's lists
     app.get('/lists', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let [results] = await db.query(
@@ -159,6 +192,7 @@ async function start() {
         );
         return {lists: results};
     }));
+    //creates a new list
     app.post('/list', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let body = req.body;
@@ -179,6 +213,7 @@ async function start() {
             listId
         };
     }));
+    //gets the info for a list
     app.get('/list/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
@@ -192,6 +227,7 @@ async function start() {
         let list = results[0];
         return {list};
     }));
+    //update the info for a list
     app.put('/list/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
@@ -209,6 +245,7 @@ async function start() {
         if(results.affectedRows === 0)
             throw new Error('Unexpected missing list');
     }));
+    //deletes a list (and it's items)
     app.delete('/list/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
@@ -220,7 +257,10 @@ async function start() {
         if(results.affectedRows === 0)
             throw new Error('Unexpected missing list');
     }));
+
     //region list users
+
+    //gets the users which can access a list
     app.get('/list/:listId/users', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
@@ -234,6 +274,7 @@ async function start() {
             users[user.userId] = {role: user.role};
         return {users};
     }));
+    //gets the access level for a user on a list
     app.get('/list/:listId/user/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, userId: targetUserId} = req.params;
@@ -245,6 +286,7 @@ async function start() {
         let user = results[0] || {};
         return {role: user.role};
     }));
+    //sets the access level for a user on a list
     app.put('/list/:listId/user/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let {listId, userId: targetUserId} = req.params;
@@ -264,6 +306,7 @@ async function start() {
             [targetUserId, listId, body.role]
         );
     }));
+    //deletes a user's access to a list
     app.delete('/list/:listId/user/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, userId: targetUserId} = req.params;
@@ -273,8 +316,12 @@ async function start() {
             [targetUserId, listId]
         );
     }));
+
     //endregion
+
     //region list items
+
+    //gets the items in a list
     app.get('/list/:listId/items', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
@@ -285,6 +332,7 @@ async function start() {
         );
         return {items: results};
     }));
+    //adds a new item to a list
     app.post('/list/:listId/item', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
@@ -312,6 +360,7 @@ async function start() {
             itemId
         };
     }));
+    //gets the info for an item in a list
     app.get('/list/:listId/item/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
@@ -329,6 +378,7 @@ async function start() {
         let item = results[0];
         return {item};
     }));
+    //updates the info for an item in a list
     app.put('/list/:listId/item/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
@@ -358,6 +408,7 @@ async function start() {
             });
         }
     }));
+    //deletes an item
     app.delete('/list/:listId/item/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
@@ -373,10 +424,13 @@ async function start() {
             });
         }
     }));
+
     //endregion
+
     //endregion
 
     app.use((err, req, res, next) => {
+        //client errors are "expected" so don't print any debug info to the console
         if(err instanceof ClientError){
             res.status(err.status)
                 .set(err.headers)
@@ -397,6 +451,8 @@ async function start() {
         }
     });
 
+    //start listening
     app.listen(port, hostname);
 }
+//the the server immediately
 start().catch(console.error);
