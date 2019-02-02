@@ -452,7 +452,9 @@ async function start() {
     });
 
     //start listening
-    app.listen(port, hostname);
+    app.listen(port, hostname, () => {
+        console.log(`The server is running at http://${hostname}:${port}`);
+    });
 }
 //the the server immediately
 start().catch(console.error);
