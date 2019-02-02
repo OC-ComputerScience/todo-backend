@@ -20,16 +20,20 @@ This project is the example backend for the Todo App, implemented with Express.
     ```bash
     git clone https://gitlab.com/oc-internet-apps/todo-backend.git
     ```
-2. Update the database password in `config.js`.
-3. Install dependencies
+2. Move into the new directory
+    ```bash
+    cd todo-backend
+    ```
+3. Update the database password in `config.js`.
+4. Install dependencies
     ```bash
     npm install
     ```
-4. Build source code
+5. Build source code
     ```bash
     npm run build
     ```
-5. Run server
+6. Run server
     ```bash
     npm run start
     ```
