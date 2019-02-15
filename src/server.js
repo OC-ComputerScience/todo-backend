@@ -31,6 +31,11 @@ async function start() {
     app.use(cors);
     //parse JSON bodies
     app.use(express.json());
+    //disable caching responses
+    app.use((req, res, next) => {
+        res.set('Cache-Control', 'no-cache');
+        next();
+    });
 
     //reply to all options requests
     app.options('*', cors);
@@ -193,7 +198,7 @@ async function start() {
         return {lists: results};
     }));
     //creates a new list
-    app.post('/list', route(async (req, res, db) => {
+    app.post('/lists', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let body = req.body;
         body = jsonValidate(body, {
@@ -214,7 +219,7 @@ async function start() {
         };
     }));
     //gets the info for a list
-    app.get('/list/:listId', route(async (req, res, db) => {
+    app.get('/lists/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
         await checkPermissions(req, db, userId, listId, 'read');
@@ -228,7 +233,7 @@ async function start() {
         return {list};
     }));
     //update the info for a list
-    app.put('/list/:listId', route(async (req, res, db) => {
+    app.put('/lists/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
         await checkPermissions(req, db, userId, listId, 'write');
@@ -246,7 +251,7 @@ async function start() {
             throw new Error('Unexpected missing list');
     }));
     //deletes a list (and it's items)
-    app.delete('/list/:listId', route(async (req, res, db) => {
+    app.delete('/lists/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
         await checkPermissions(req, db, userId, listId, 'owner');
@@ -261,7 +266,7 @@ async function start() {
     //region list users
 
     //gets the users which can access a list
-    app.get('/list/:listId/users', route(async (req, res, db) => {
+    app.get('/lists/:listId/users', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
         await checkPermissions(req, db, userId, listId, 'read');
@@ -275,7 +280,7 @@ async function start() {
         return {users};
     }));
     //gets the access level for a user on a list
-    app.get('/list/:listId/user/:userId', route(async (req, res, db) => {
+    app.get('/lists/:listId/users/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, userId: targetUserId} = req.params;
         await checkPermissions(req, db, userId, listId, 'read');
@@ -287,7 +292,7 @@ async function start() {
         return {role: user.role};
     }));
     //sets the access level for a user on a list
-    app.put('/list/:listId/user/:userId', route(async (req, res, db) => {
+    app.put('/lists/:listId/users/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let {listId, userId: targetUserId} = req.params;
         await checkPermissions(req, db, userId, listId, 'owner');
@@ -307,7 +312,7 @@ async function start() {
         );
     }));
     //deletes a user's access to a list
-    app.delete('/list/:listId/user/:userId', route(async (req, res, db) => {
+    app.delete('/lists/:listId/users/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, userId: targetUserId} = req.params;
         await checkPermissions(req, db, userId, listId, 'owner');
@@ -322,7 +327,7 @@ async function start() {
     //region list items
 
     //gets the items in a list
-    app.get('/list/:listId/items', route(async (req, res, db) => {
+    app.get('/lists/:listId/items', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
         await checkPermissions(req, db, userId, listId, 'read');
@@ -333,7 +338,7 @@ async function start() {
         return {items: results};
     }));
     //adds a new item to a list
-    app.post('/list/:listId/item', route(async (req, res, db) => {
+    app.post('/lists/:listId/items', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
         await checkPermissions(req, db, userId, listId, 'write');
@@ -361,7 +366,7 @@ async function start() {
         };
     }));
     //gets the info for an item in a list
-    app.get('/list/:listId/item/:itemId', route(async (req, res, db) => {
+    app.get('/lists/:listId/items/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
         await checkPermissions(req, db, userId, listId, 'read');
@@ -379,7 +384,7 @@ async function start() {
         return {item};
     }));
     //updates the info for an item in a list
-    app.put('/list/:listId/item/:itemId', route(async (req, res, db) => {
+    app.put('/lists/:listId/items/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
         await checkPermissions(req, db, userId, listId, 'write');
@@ -409,7 +414,7 @@ async function start() {
         }
     }));
     //deletes an item
-    app.delete('/list/:listId/item/:itemId', route(async (req, res, db) => {
+    app.delete('/lists/:listId/items/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
         await checkPermissions(req, db, userId, listId, 'write');
