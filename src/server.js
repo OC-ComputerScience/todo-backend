@@ -43,7 +43,7 @@ async function start() {
     //region user
 
     //creates a new user
-    app.post('/user', route(async (req, res, db) => {
+    app.post('/users', route(async (req, res, db) => {
         let body = req.body;
         //this is an example of how to specify the structure of a body
         //  all entries are required unless wrapped in an optional (like firstName and lastName)
@@ -98,7 +98,7 @@ async function start() {
         };
     }));
     //gets the user's information
-    app.get('/user', route(async (req, res, db) => {
+    app.get('/users', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let [results] = await db.query(
             `SELECT id, firstName, lastName, username FROM todo.users WHERE id = ?`,
@@ -110,7 +110,7 @@ async function start() {
         return {user};
     }));
     //updates the user's information
-    app.put('/user', route(async (req, res, db) => {
+    app.put('/users', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let body = req.body;
         body = jsonValidate(body, {
@@ -135,7 +135,7 @@ async function start() {
             throw new Error('Unexpected missing user');
     }));
     //deletes the user
-    app.delete('/user', route(async (req, res, db) => {
+    app.delete('/users', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let [results] = await db.query(
             `DELETE FROM todo.users WHERE id = ?`,
@@ -145,7 +145,7 @@ async function start() {
             throw new Error('Unexpected missing user');
     }));
     //checks if the username is taken
-    app.get('/user/name-taken', route(async (req, res, db) => {
+    app.get('/users/name-taken', route(async (req, res, db) => {
         let body = req.query;
         body = jsonValidate(body, {
             username: 'johndoe'
