@@ -17,6 +17,8 @@ export class Optional {
  * Returns the json type of a value
  */
 export function jsonType(value) {
+    if(value == null)
+        return 'null';
     if(Array.isArray(value))
         return 'array';
     if(typeof value === 'object')
@@ -27,8 +29,6 @@ export function jsonType(value) {
         return 'number';
     if(typeof value === 'boolean')
         return 'boolean';
-    if(value == null)
-        return 'null';
     return 'unknown';
 }
 
@@ -59,11 +59,18 @@ export function jsonValidate(actual, expected, path=null) {
     let actualType = jsonType(actual);
     let expectedType = jsonType(expected);
     if(expectedType !== actualType){
-        throw new ClientError({
-            code: 'invalid-body',
-            message: `Invalid ${path || 'body'}. Expected '${expectedType}' but got '${actualType}'. See data for expected format.`,
-            data: expected
-        });
+        if(path == null && actual === undefined){
+            throw new ClientError({
+                code: 'invalid-body',
+                message: `Invalid body. Please set the 'Content-Type' header to 'application/json'.`
+            });
+        }else{
+            throw new ClientError({
+                code: 'invalid-body',
+                message: `Invalid ${path || 'body'}. Expected '${expectedType}' but got '${actualType}'. See data for an example of the correct format.`,
+                data: expected
+            });
+        }
     }
     switch(expectedType) {
         case 'string': {

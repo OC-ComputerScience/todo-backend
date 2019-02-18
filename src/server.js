@@ -29,8 +29,14 @@ async function start() {
     }
     //handle CORS requests
     app.use(cors);
+    let jsonMiddleware = express.json({ strict: false });
     //parse JSON bodies
-    app.use(express.json());
+    app.use((req, res, next) => {
+        if(req.get('content-type').toLowerCase() === 'application/json')
+            jsonMiddleware(req, res, next);
+        else
+            next();
+    });
     //disable caching responses
     app.use((req, res, next) => {
         res.set('Cache-Control', 'no-cache');
