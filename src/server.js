@@ -32,7 +32,8 @@ async function start() {
     let jsonMiddleware = express.json({ strict: false });
     //parse JSON bodies
     app.use((req, res, next) => {
-        if(req.get('content-type').toLowerCase() === 'application/json')
+        let type = req.get('content-type');
+        if(type != null && type.toLowerCase() === 'application/json')
             jsonMiddleware(req, res, next);
         else
             next();
