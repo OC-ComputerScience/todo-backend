@@ -68,6 +68,8 @@ export async function decrypt(token) {
         let buffer = Buffer.from(token, 'base64');
         let iv = buffer.slice(0, ivSize);
         let tag = buffer.slice(ivSize, ivSize + tagSize);
+        if(iv.length !== ivSize || tag.length !== tagSize)
+            throw null;
         let encrypted = buffer.slice(ivSize + tagSize);
         let decipher = crypto.createDecipheriv('aes-256-gcm', secretKey, iv);
         decipher.setAuthTag(tag);
