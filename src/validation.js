@@ -120,3 +120,12 @@ export function jsonValidate(actual, expected, path=null) {
     }
     return actual;
 }
+
+/**
+ * Parses an integer, returning NaN if it is not a valid number.
+ */
+export function parseIntStrict(x){
+    if (/^([-+])?(\d+|Infinity)$/.test(x))
+        return Number(x);
+    return NaN;
+}

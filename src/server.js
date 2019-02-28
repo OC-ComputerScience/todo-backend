@@ -3,7 +3,7 @@ import * as database from './database';
 import express from 'express';
 import Cors from 'cors';
 import { ClientError } from './errors';
-import { jsonValidate, Optional } from './validation';
+import { jsonValidate, Optional, parseIntStrict } from './validation';
 import { encrypt, getSalt, hashPassword } from './crypto';
 import { route, authenticate, checkPermissions } from './util';
 
@@ -170,7 +170,7 @@ async function start() {
     //region auth
 
     //creates a new session
-    app.post('/user/login', route(async (req, res, db) => {
+    app.post('/users/login', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, 'credentials');
         let expireTime = new Date(Date.now() + config.tokenLifetime);
         let [results] = await db.query(
@@ -182,7 +182,7 @@ async function start() {
         return {token, expireTime};
     }));
     //logs out an existing session
-    app.post('/user/logout', route(async (req, res, db) => {
+    app.post('/users/logout', route(async (req, res, db) => {
         let {sessionId} = await authenticate(req, db, false);
         if(sessionId == null)
             return;
@@ -229,6 +229,13 @@ async function start() {
     app.get('/lists/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
+        listId = parseIntStrict(listId);
+        if(isNaN(listId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'read');
         let [results] = await db.query(
             `SELECT id, name FROM todo.lists WHERE id = ?`,
@@ -243,6 +250,13 @@ async function start() {
     app.put('/lists/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
+        listId = parseIntStrict(listId);
+        if(isNaN(listId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'write');
         let body = req.body;
         body = jsonValidate(body, {
@@ -261,6 +275,13 @@ async function start() {
     app.delete('/lists/:listId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
+        listId = parseIntStrict(listId);
+        if(isNaN(listId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'owner');
         let [results] = await db.query(
             `DELETE FROM todo.lists WHERE id = ?`,
@@ -276,6 +297,13 @@ async function start() {
     app.get('/lists/:listId/users', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
+        listId = parseIntStrict(listId);
+        if(isNaN(listId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'read');
         let [results] = await db.query(
             `SELECT userId, role FROM todo.permissions WHERE listId = ?`,
@@ -290,6 +318,14 @@ async function start() {
     app.get('/lists/:listId/users/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, userId: targetUserId} = req.params;
+        listId = parseIntStrict(listId);
+        targetUserId = parseIntStrict(targetUserId);
+        if(isNaN(listId) || isNaN(targetUserId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'read');
         let [results] = await db.query(
             `SELECT role FROM todo.permissions WHERE listId = ? AND userId = ?`,
@@ -302,6 +338,14 @@ async function start() {
     app.put('/lists/:listId/users/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db);
         let {listId, userId: targetUserId} = req.params;
+        listId = parseIntStrict(listId);
+        targetUserId = parseIntStrict(targetUserId);
+        if(isNaN(listId) || isNaN(targetUserId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'owner');
         let body = req.body;
         body = jsonValidate(body, {
@@ -322,6 +366,14 @@ async function start() {
     app.delete('/lists/:listId/users/:userId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, userId: targetUserId} = req.params;
+        listId = parseIntStrict(listId);
+        targetUserId = parseIntStrict(targetUserId);
+        if(isNaN(listId) || isNaN(targetUserId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'owner');
         await db.query(
             `DELETE FROM todo.permissions WHERE userId = ? AND listId = ?`,
@@ -337,6 +389,13 @@ async function start() {
     app.get('/lists/:listId/items', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
+        listId = parseIntStrict(listId);
+        if(isNaN(listId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'read');
         let [results] = await db.query(
             `SELECT id, name, description, state FROM todo.items WHERE listId = ? ORDER BY id ASC`,
@@ -348,6 +407,13 @@ async function start() {
     app.post('/lists/:listId/items', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId} = req.params;
+        listId = parseIntStrict(listId);
+        if(isNaN(listId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'write');
         let body = req.body;
         body = jsonValidate(body, {
@@ -376,6 +442,14 @@ async function start() {
     app.get('/lists/:listId/items/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
+        listId = parseIntStrict(listId);
+        itemId = parseIntStrict(itemId);
+        if(isNaN(listId) || isNaN(itemId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'read');
         let [results] = await db.query(
             `SELECT id, name, description, state FROM todo.items WHERE listId = ? AND id = ?`,
@@ -394,6 +468,14 @@ async function start() {
     app.put('/lists/:listId/items/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
+        listId = parseIntStrict(listId);
+        itemId = parseIntStrict(itemId);
+        if(isNaN(listId) || isNaN(itemId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'write');
         let body = req.body;
         if(Object.keys(body).length === 0)
@@ -424,6 +506,14 @@ async function start() {
     app.delete('/lists/:listId/items/:itemId', route(async (req, res, db) => {
         let {userId} = await authenticate(req, db, false);
         let {listId, itemId} = req.params;
+        listId = parseIntStrict(listId);
+        itemId = parseIntStrict(itemId);
+        if(isNaN(listId) || isNaN(itemId)){
+            throw new ClientError({
+                code: 'invalid-route-param',
+                message: `Invalid route parameter. A valid number is required.`
+            });
+        }
         await checkPermissions(req, db, userId, listId, 'write');
         let [results] = await db.query(
             `DELETE FROM todo.items WHERE listId = ? AND id = ?`,
