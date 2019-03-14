@@ -123,10 +123,20 @@ async function start() {
         let {userId} = await authenticate(req, db);
         let body = req.body;
         body = jsonValidate(body, {
+            id: new Optional('1'),
             firstName: new Optional('John'),
             lastName: new Optional('Doe'),
             password: new Optional('secret')
         });
+        if('id' in body){
+            if(body.id !== userId){
+                throw new ClientError({
+                    code: 'immutable-id',
+                    message: 'User ids are immutable.'
+                });
+            }
+            delete body.id;
+        }
         //if the request is empty, do nothing
         if(Object.keys(body).length === 0)
             return;
@@ -262,8 +272,18 @@ async function start() {
         await checkPermissions(req, db, userId, listId, 'write');
         let body = req.body;
         body = jsonValidate(body, {
+            id: new Optional('1'),
             name: new Optional('Groceries')
         });
+        if('id' in body){
+            if(body.id !== listId){
+                throw new ClientError({
+                    code: 'immutable-id',
+                    message: 'List ids are immutable.'
+                });
+            }
+            delete body.id;
+        }
         if(Object.keys(body).length === 0)
             return;
         let [results] = await db.query(
@@ -480,13 +500,23 @@ async function start() {
         }
         await checkPermissions(req, db, userId, listId, 'write');
         let body = req.body;
-        if(Object.keys(body).length === 0)
-            return;
         body = jsonValidate(body, {
+            id: new Optional('1'),
             name: new Optional('Apple'),
             description: new Optional('For the apple pie.'),
             state: new Optional('in-progress')
         });
+        if('id' in body){
+            if(body.id !== itemId){
+                throw new ClientError({
+                    code: 'immutable-id',
+                    message: 'Item ids are immutable.'
+                });
+            }
+            delete body.id;
+        }
+        if(Object.keys(body).length === 0)
+            return;
         if(body.state != null && !['in-progress', 'complete', 'canceled'].includes(body.state)){
             throw new ClientError({
                 code: 'invalid-state',
