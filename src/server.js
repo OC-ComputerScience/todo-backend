@@ -18,7 +18,9 @@ async function start() {
     const app = express();
     //create a handler for CORS
     const cors = Cors({
-        origin: true,
+        origin: function(origin, callback) {
+            callback(null, true);
+        },
         credentials: true
     });
     //setup our artificial delay (if configured)
