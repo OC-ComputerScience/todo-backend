@@ -129,7 +129,8 @@ async function start() {
             password: new Optional('secret')
         });
         if('id' in body){
-            if(body.id !== userId){
+            let id = parseIntStrict(body.id);
+            if(id !== userId){
                 throw new ClientError({
                     code: 'immutable-id',
                     message: 'User ids are immutable.'
@@ -276,7 +277,8 @@ async function start() {
             name: new Optional('Groceries')
         });
         if('id' in body){
-            if(body.id !== listId){
+            let id = parseIntStrict(body.id);
+            if(id !== listId){
                 throw new ClientError({
                     code: 'immutable-id',
                     message: 'List ids are immutable.'
@@ -507,7 +509,8 @@ async function start() {
             state: new Optional('in-progress')
         });
         if('id' in body){
-            if(body.id !== itemId){
+            let id = parseIntStrict(body.id);
+            if(id !== itemId){
                 throw new ClientError({
                     code: 'immutable-id',
                     message: 'Item ids are immutable.'
