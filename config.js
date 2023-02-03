@@ -3,7 +3,7 @@ module.exports = {
     //the server info for the api
     //  you should not need to change this
     hostname: "localhost",
-    port: 8081,
+    port: 3001,
     //the secret key for the server
     //  ordinarily we would not want to check this into git, but we don't care for this example
     secretKey: Buffer.from(
