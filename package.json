@@ -4,7 +4,7 @@
   "scripts": {
     "watch": "babel src --out-dir dist --copy-files --watch",
     "build": "babel src --out-dir dist --copy-files",
-    "start": "node src/server.js"
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "mysql2": "^1.6.4",
