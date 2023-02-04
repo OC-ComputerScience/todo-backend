@@ -1,35 +1,35 @@
-import mysql from 'mysql2/promise';
-import {database as config} from '../config';
-import {saltSize, keySize} from './crypto';
+import mysql from "mysql2/promise";
+import { database as config } from "../config";
+import { saltSize, keySize } from "./crypto";
 
 //create the database connection pool
 const pool = mysql.createPool({
-    host: config.hostname,
-    port: config.port,
-    user: config.username,
-    password: config.password,
-    supportBigNumbers: true,
-    bigNumberStrings: true,
-    connectionLimit: 10
+  host: config.hostname,
+  port: config.port,
+  user: config.username,
+  password: config.password,
+  supportBigNumbers: true,
+  bigNumberStrings: true,
+  connectionLimit: 10,
 });
 
 /**
  * Initializes the database tables
  * @param {boolean} reset True if the existing tables should be deleted
  */
-export async function init(reset=false) {
-    let conn = await pool.getConnection();
-    try{
-        if(reset){
-            await conn.query(`
+export async function init(reset = false) {
+  let conn = await pool.getConnection();
+  try {
+    if (reset) {
+      await conn.query(`
                 DROP DATABASE IF EXISTS todo
             `);
-        }
-        await conn.query(`
+    }
+    await conn.query(`
             CREATE DATABASE IF NOT EXISTS todo
         `);
-        //stores information for the users
-        await conn.query(`
+    //stores information for the users
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.users (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 firstName VARCHAR(255),
@@ -41,8 +41,8 @@ export async function init(reset=false) {
                 UNIQUE(username)
             )
         `);
-        //stores information for a single login session
-        await conn.query(`
+    //stores information for a single login session
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.sessions (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 userId BIGINT UNSIGNED NOT NULL,
@@ -54,16 +54,16 @@ export async function init(reset=false) {
                   ON DELETE CASCADE
             )
         `);
-        //stores information for the lists
-        await conn.query(`
+    //stores information for the lists
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.lists (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 name VARCHAR(255) NOT NULL,
                 PRIMARY KEY(id)
             )
         `);
-        //stores information for the items
-        await conn.query(`
+    //stores information for the items
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.items (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 listId BIGINT UNSIGNED NOT NULL,
@@ -77,8 +77,8 @@ export async function init(reset=false) {
                     ON DELETE CASCADE
             )
         `);
-        //stores information for the permissions which a user has on a list
-        await conn.query(`
+    //stores information for the permissions which a user has on a list
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS todo.permissions (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 userId BIGINT UNSIGNED,
@@ -96,47 +96,47 @@ export async function init(reset=false) {
                     ON DELETE CASCADE
             )
         `);
-    }catch(ex){
-        ex.message = 'Database init failed: ' + ex.message;
-        throw ex;
-    }finally{
-        conn.release();
-    }
+  } catch (ex) {
+    ex.message = "Database init failed: " + ex.message;
+    throw ex;
+  } finally {
+    conn.release();
+  }
 }
 
 /**
  * Gets a new database connection
  */
 export async function getConnection() {
-    return await pool.getConnection();
+  return await pool.getConnection();
 }
 
 /**
  * Release a database connection back to the pool
  */
 export async function releaseConnection(conn) {
-    conn.release();
+  conn.release();
 }
 
 /**
  * Removes expired sessions and inaccessible lists
  */
 async function purge() {
-    let db = await getConnection();
-    try{
-        let [results] = await db.query(
-            `DELETE FROM todo.sessions WHERE expirationDate < NOW()`
-        );
-        if(results.affectedRows !== 0)
-            console.log(`Purged ${results.affectedRows} expired sessions.`);
-        [results] = await db.query(
-            `DELETE FROM todo.lists WHERE id NOT IN (SELECT DISTINCT listId FROM todo.permissions)`
-        );
-        if(results.affectedRows !== 0)
-            console.log(`Purged ${results.affectedRows} orphaned lists.`);
-    }finally{
-        await releaseConnection(db);
-    }
+  let db = await getConnection();
+  try {
+    let [results] = await db.query(
+      `DELETE FROM todo.sessions WHERE expirationDate < NOW()`
+    );
+    if (results.affectedRows !== 0)
+      console.log(`Purged ${results.affectedRows} expired sessions.`);
+    [results] = await db.query(
+      `DELETE FROM todo.lists WHERE id NOT IN (SELECT DISTINCT listId FROM todo.permissions)`
+    );
+    if (results.affectedRows !== 0)
+      console.log(`Purged ${results.affectedRows} orphaned lists.`);
+  } finally {
+    await releaseConnection(db);
+  }
 }
 
 //purge shortly after startup and then every hour on a schedule

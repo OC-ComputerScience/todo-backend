@@ -12,7 +12,7 @@ module.exports = {
     ),
     //an artificial delay (in ms) to add to all responses
     //  useful for testing loading icons and such with a local server
-    artificialDelay: 0
+    artificialDelay: 0,
   },
   database: {
     //the database server info
@@ -25,8 +25,8 @@ module.exports = {
     //the database in which to store the data
     database: "todo",
     //true to automatically setup the DB tables
-    autoInit: true
+    autoInit: true,
   },
   //the lifetime of an auth token
-  tokenLifetime: 24 * 60 * 60 * 1000
+  tokenLifetime: 24 * 60 * 60 * 1000,
 };

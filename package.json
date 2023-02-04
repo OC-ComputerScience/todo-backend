@@ -1,22 +1,22 @@
 {
-    "name": "todo-backend",
-    "version": "1.0.0",
-    "scripts": {
-        "watch": "babel src --out-dir dist --copy-files --watch",
-        "build": "babel src --out-dir dist --copy-files",
-        "start": "node dist/server.js"
-    },
-    "dependencies": {
-        "mysql2": "^1.6.4",
-        "express": "^4.16.4",
-        "@babel/runtime": "^7.2.0",
-        "cors": "^2.8.5"
-    },
-    "devDependencies": {
-        "@babel/core": "^7.2.2",
-        "@babel/cli": "^7.2.3",
-        "@babel/preset-env": "^7.2.3",
-        "@babel/plugin-transform-runtime": "^7.2.0",
-        "@babel/plugin-proposal-object-rest-spread": "^7.2.0"
-    }
+  "name": "todo-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "watch": "babel src --out-dir dist --copy-files --watch",
+    "build": "babel src --out-dir dist --copy-files",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "mysql2": "^1.6.4",
+    "express": "^4.16.4",
+    "@babel/runtime": "^7.2.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/cli": "^7.2.3",
+    "@babel/preset-env": "^7.2.3",
+    "@babel/plugin-transform-runtime": "^7.2.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.2.0"
+  }
 }
