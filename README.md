@@ -45,11 +45,7 @@ npm run start
 1. Clone the project into your **nodeapps** directory.
 
 ```
-cd ~
-```
-
-```
-cd nodeapps
+cd ~/nodeapps
 ```
 
 ```
